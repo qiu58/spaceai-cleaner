@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SpaceAI - 智能磁盘分析清理工具</title>
+  <link rel="stylesheet" href="styles.css">
+  <script>
+    window.nodeRequire = require;
+    delete window.require;
+    delete window.exports;
+    delete window.module;
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+</head>
+<body>
+  <div id="app">
+    <header class="header">
+      <div class="logo">
+        <span class="logo-icon">🧹</span>
+        <span class="logo-text">SpaceAI</span>
+      </div>
+      <nav class="nav">
+        <button class="nav-btn active" data-view="home">首页</button>
+        <button class="nav-btn" data-view="tasks">自动清理</button>
+        <button class="nav-btn" data-view="sandbox">回收站</button>
+
+      </nav>
+    </header>
+
+    <main class="main-content">
+      <section id="home-view" class="view active">
+        <div class="home-container">
+          <div class="scan-cards">
+            <div class="card scan-card" data-drive="C">
+              <div class="card-icon">💿</div>
+              <h3>扫描 C 盘</h3>
+              <p>分析系统盘空间使用</p>
+              <button class="btn-primary scan-btn">开始扫描</button>
+            </div>
+            <div class="card scan-card" data-drive="D">
+              <div class="card-icon">💾</div>
+              <h3>扫描 D 盘</h3>
+              <p>分析数据盘空间使用</p>
+              <button class="btn-primary scan-btn">开始扫描</button>
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+      <section id="scan-view" class="view">
+        <div class="scan-container">
+          <div class="scan-header">
+            <button class="btn-secondary back-btn">← 返回首页</button>
+            <button class="btn-secondary up-btn" id="up-btn" style="display:none;">⬆️ 返回上一级</button>
+            <h2 id="current-drive-title">磁盘分析</h2>
+            <div class="progress-container" id="progress-container" style="display:none;">
+              <div class="progress-bar" id="progress-bar"></div>
+            </div>
+          </div>
+          <div class="treemap-container">
+            <div id="treemap"></div>
+            <div id="treemap-loading" class="treemap-loading" style="display:none;">
+              <div class="loading-spinner"></div>
+              <div style="font-size: 16px; color: #667eea; margin-top: 20px; text-align: center; font-weight: 500;">☕ 文件数量庞大，您可以将窗口最小化，完成后会自动展示！</div>
+              <div id="loading-text" style="color: gray; font-size: 14px; margin-top: 15px; text-align: center;">正在准备扫描...</div>
+            </div>
+            <div id="treemap-empty" class="treemap-empty" style="display:none;">
+              未扫描到数据或权限不足
+            </div>
+          </div>
+          <div id="ai-sidebar" class="sidebar">
+            <div class="sidebar-header">
+              <h3>AI 智能解释</h3>
+              <button class="close-btn" id="close-sidebar">×</button>
+            </div>
+            <div class="sidebar-content" id="sidebar-content">
+              <div class="placeholder">右键点击色块，选择「AI 解释」</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="tasks-view" class="view">
+        <div class="tasks-container">
+          <h2>定期清理文件夹</h2>
+          <div class="task-section">
+            <h3>添加新任务</h3>
+            <div class="add-task-form">
+              <div class="path-input-wrapper">
+                <input type="text" id="task-path" placeholder="目标路径" class="input">
+                <button class="btn-secondary" id="browse-path-btn">📁 浏览</button>
+              </div>
+              <div class="period-selector">
+                <select id="task-period" class="select">
+                  <option value="0">当天</option>
+                  <option value="7">每 7 天</option>
+                  <option value="14">每 14 天</option>
+                  <option value="30">每 30 天</option>
+                  <option value="custom">自定义</option>
+                </select>
+                <input type="number" id="custom-period" placeholder="输入天数" min="1" class="input" style="display: none; width: 120px;">
+                <input type="time" id="task-time" class="input" placeholder="选择时间" style="width: 120px;">
+              </div>
+              <button class="btn-primary" id="add-task-btn">添加任务</button>
+            </div>
+          </div>
+          <div class="task-section">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+              <h3>我的任务列表</h3>
+              <button id="refresh-tasks" class="btn-secondary" style="padding:6px 12px;font-size:14px;display:flex;align-items:center;gap:4px;">
+                🔄 刷新
+              </button>
+            </div>
+            <ul class="task-list" id="task-list"></ul>
+          </div>
+          <div class="task-section">
+            <h3>建议清理项</h3>
+            <ul class="suggested-tasks" id="suggested-tasks"></ul>
+          </div>
+        </div>
+      </section>
+
+      <section id="sandbox-view" class="view">
+        <div class="sandbox-container">
+          <h2>回收站</h2>
+          <div class="sandbox-stats">
+            <div class="sandbox-size-info" id="sandbox-size-info">
+              当前回收站已占用：<span id="sandbox-size">0 B</span>
+            </div>
+            <div class="sandbox-actions">
+              <button class="btn-danger" id="empty-sandbox">清空回收站并释放空间</button>
+            </div>
+          </div>
+          <div class="sandbox-list" id="sandbox-list"></div>
+        </div>
+      </section>
+
+
+    </main>
+  </div>
+
+  <div id="context-menu" class="context-menu">
+    <div class="menu-item" data-action="explain">🤖 AI 解释</div>
+    <div class="menu-item" data-action="delete">🗑️ 安全删除</div>
+  </div>
+
+  <div id="confirm-modal" class="modal">
+    <div class="modal-content">
+      <h3>确认删除</h3>
+      <p id="confirm-message"></p>
+      <div class="modal-actions">
+        <button class="btn-secondary" id="cancel-delete">取消</button>
+        <button class="btn-danger" id="confirm-delete">确认删除</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="loading-overlay" class="loading-overlay">
+    <div class="loading-content">
+      <div class="loading-spinner"></div>
+      <div class="loading-text">正在扫描中...</div>
+    </div>
+  </div>
+
+  <div id="welcome-modal" class="welcome-modal">
+    <div class="welcome-content">
+      <h2>欢迎使用 SpaceAI 智能磁盘清理</h2>
+      <div class="feature-grid">
+        <div class="feature-item">
+          <div class="feature-icon">🎨</div>
+          <h3>可视化空间分析</h3>
+          <p>告别枯燥列表，用直观色块洞察硬盘占用</p>
+        </div>
+        <div class="feature-item">
+          <div class="feature-icon">🤖</div>
+          <h3>AI 智能风险评估</h3>
+          <p>右键任意文件，AI 为你通俗解释用途并评估删除风险</p>
+        </div>
+        <div class="feature-item">
+          <div class="feature-icon">🛡️</div>
+          <h3>隔离沙箱防误删</h3>
+          <p>误删随时找回，15天后自动物理释放</p>
+        </div>
+        <div class="feature-item">
+          <div class="feature-icon">⏳</div>
+          <h3>自动化定期清理</h3>
+          <p>自定义清理周期与目标路径，省心省力</p>
+        </div>
+      </div>
+      <button id="start-experience" class="btn-primary">开始体验</button>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
