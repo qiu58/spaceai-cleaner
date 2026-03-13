@@ -38,7 +38,7 @@ SpaceAI 是一款智能磁盘分析清理工具，帮助用户直观地分析磁
 
 ### 方法 1：直接运行打包好的应用（推荐）
 
-1. 从 [Releases]([https://github.com/yourusername/spaceai-cleaner/releases](https://github.com/qiu58/spaceai-cleaner/releases]) 页面下载最新的安装包
+1. 从 [Releases](https://github.com/qiu58/spaceai-cleaner/releases/tag/v1.0.0) 页面下载最新的安装包
 2. 双击安装包进行安装
 3. 运行 SpaceAI 应用
 
